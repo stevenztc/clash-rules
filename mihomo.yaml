@@ -1,6 +1,24 @@
-# ------------------------------------------------------------------
-# 基础通用配置
-# ------------------------------------------------------------------
+# DNS防泄露版本
+# 必读！！！
+# 注意规则在满足自己需求情况下，尽量做到精简，不要过度复杂，以免影响性能。
+# 跑裸核用户请自行去掉下方控制面板模块的注释。
+# 机场订阅
+proxy-providers:
+  Airport1:
+    url: "https://1pyvg.no-mad-world.club/link/0wllHgMEePRBTthX?clash=3"
+    type: http
+    interval: 86400
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+    proxy: 直连
+
+# 节点信息
+proxies:
+  - {name: 直连, type: direct}
+
+# 全局配置 
 mixed-port: 7890
 allow-lan: true
 bind-address: "*"
@@ -15,14 +33,29 @@ profile:
   store-selected: true
   store-fake-ip: true
 
-# 控制面板配置 (跑裸核必开)
+# 为防止使用插件朋友遇到面板问题，我注释掉了此模块。
 external-controller: 0.0.0.0:9090
-secret: "123456"  # 外部控制器的密码
-external-ui: ui   # 如果你下载了控制面板文件，放在这个目录下
+secret: "123456"
+external-ui: ui
+external-ui-name: zashboard
+external-ui-url: "https://github.com/Zephyruso/zashboard/archive/refs/heads/gh-pages.zip"
 
-# ------------------------------------------------------------------
-# TUN 透明代理配置 (针对你的 with_gvisor 内核优化)
-# ------------------------------------------------------------------
+# 嗅探（fakeip下其实可以不用嗅探）
+sniffer:
+  enable: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - "Mijia Cloud"
+    - "+.push.apple.com"
+
+# 入站
 tun:
   enable: true
   # system/gvisor/mixed
@@ -35,9 +68,7 @@ tun:
   auto-redirect: true
   auto-detect-interface: true
 
-
-# DNS 设置 (防泄露 & Fake-IP 模式)
-# ------------------------------------------------------------------
+# DNS模块
 dns:
   enable: true
   cache-algorithm: arc
@@ -45,42 +76,24 @@ dns:
   ipv6: false
   respect-rules: true
   enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
+  fake-ip-range: 28.0.0.1/8
   fake-ip-filter-mode: blacklist
   default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-    - 202.102.224.68
+    - https://223.5.5.5/dns-query
   proxy-server-nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
   direct-nameserver:
-    - '202.102.224.68'
-    - '202.102.227.68'
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
   nameserver:
-    - 'https://1.1.1.1/dns-query'  # Cloudflare，速度快
-    - 'https://8.8.8.8/dns-query'  # Google，兼容性最强
+    - https://8.8.8.8/dns-query#RULES&ecs=223.5.5.0/24
   fake-ip-filter:
     - "rule-set:fakeipfilter_domain"
-# 机场订阅 & 代理节点
-proxy-providers:
-  Airport1:
-    url: "订阅链接"
-    type: http
-    interval: 86400
-    path: ./proxies.yaml
-    health-check:
-      enable: true
-      url: https://www.gstatic.com/generate_204
-      interval: 300
-    proxy: 直连
-
-proxies:
-  - {name: 直连, type: direct}
-
-# ------------------------------------------------------------------
-# 策略组 (保持你的原版逻辑)
-# ------------------------------------------------------------------
+ 
+# 出站策略，根据自己情况调整每个策略里分组排序，增删都可以，比如把美国自动放到第一个，比如删除香港故转，注意别漏掉表情逗号等。
+# 如果相应分组没有筛选到对应的国家，请根据自己节点名字调整筛选关键字。
+# 没有再使用锚点，是考虑很多新手修改难度，这样新手修改某个分组更容易些。
 proxy-groups:
   - {name: "🚫 广告拦截", type: select, proxies: [REJECT, 直连]}
   - {name: 🚀 默认代理, type: select, proxies: [🔯 香港故转, 🔯 日本故转, 🔯 狮城故转, 🔯 美国故转, ♻️ 香港自动, ♻️ 日本自动, ♻️ 狮城自动, ♻️ 美国自动, ♻️ 自动选择, 🇭🇰 香港节点, 🇯🇵 日本节点, 🇸🇬 狮城节点, 🇺🇲 美国节点, 🌐 全部节点, 直连]}
@@ -110,15 +123,9 @@ proxy-groups:
   - {name: ♻️ 自动选择, type: url-test, include-all: true, tolerance: 20, interval: 300, filter: "^((?!(直连)).)*$"}
   - {name: 🌐 全部节点, type: select, include-all: true}
 
-# ------------------------------------------------------------------
-# 规则匹配 (保持你的原版规则)
-# ------------------------------------------------------------------
+# 规则匹配
 rules:
   - RULE-SET,adblock_rules,🚫 广告拦截
-  - DOMAIN-KEYWORD,msftconnecttest,直连
-  - DOMAIN-KEYWORD,msftncsi,直连
-  - GEOIP,CN,直连
-  - DOMAIN-KEYWORD,bing,直连
   - RULE-SET,private_ip,直连,no-resolve
   - RULE-SET,private_domain,直连
   - DOMAIN-SUFFIX,qichiyu.com,🚀 默认代理
@@ -143,16 +150,14 @@ rules:
   - RULE-SET,cn_ip,直连
   - MATCH,🐟 漏网之鱼
 
-# ------------------------------------------------------------------
-# 规则集定义
-# ------------------------------------------------------------------
+# 规则集
+## type：可选http/file/inline  behavior：可选domain/ipcidr/classical format：可选yaml/text/mrs
 rule-anchor:
   ip: &ip {type: http, interval: 86400, behavior: ipcidr, format: mrs}
   domain: &domain {type: http, interval: 86400, behavior: domain, format: mrs}
   class: &class {type: http, interval: 86400, behavior: classical, format: text}
-
 rule-providers:
-  adblock_rules: { <<: *domain, url: "https://testingcf.jsdelivr.net/gh/Aethersailor/adblockfilters-modified@main/rules/adblockmihomo.mrs" }
+  adblock_rules: { <<: *domain, url: "https://testingcf.jsdelivr.net/gh/Aethersailor/adblockfilters-modified@main/rules/adblockmihomo.mrs" } 
   fakeipfilter_domain: {<<: *domain, url: "https://raw.githubusercontent.com/wwqgtxx/clash-rules/release/fakeip-filter.mrs"}
   private_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs"}
   proxylite: { <<: *class, url: "https://raw.githubusercontent.com/qichiyuhub/rule/refs/heads/main/proxy.list"}
@@ -170,6 +175,7 @@ rule-providers:
   tiktok_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs"}
   geolocation-!cn: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs"}
   cn_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs"}
+  
   private_ip: {<<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.mrs"}
   cn_ip: { <<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs"}
   google_ip: { <<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs"}
