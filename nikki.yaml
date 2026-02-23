@@ -5,7 +5,7 @@
 # 机场订阅
 proxy-providers:
   Airport1:
-    url: "https://1pyvg.no-mad-world.club/link/0wllHgMEePRBTthX?clash=3"
+    url: "订阅链接"
     type: http
     interval: 86400
     health-check:
