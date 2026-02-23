@@ -57,7 +57,6 @@ dns:
   direct-nameserver:
     - '202.102.224.68'
     - '202.102.227.68'
-    - 'https://dns.alidns.com/dns-query'
   nameserver:
     - 'https://1.1.1.1/dns-query'  # Cloudflare，速度快
     - 'https://8.8.8.8/dns-query'  # Google，兼容性最强
