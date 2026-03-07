@@ -1,0 +1,140 @@
+# ==========================================================
+# 极简高性能配置 - Nikki / Clash Meta (Mihomo)
+# 包含分组：🚀 节点选择、♻️ 自动选择、🌐 GLOBAL、🚫 广告拦截、🐟 漏网之鱼
+# ==========================================================
+
+port: 7890
+socks-port: 7891
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: false
+external-controller: 0.0.0.0:9090
+
+
+
+# --- 机场订阅 ---
+proxy-providers:
+  我的机场:
+    type: http
+    url: "https://1pyvg.no-mad-world.club/link/0wllHgMEePRBTthX?clash=3"
+    interval: 86400
+    path: ./providers/airport.yaml
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+
+# --- 极简策略组 ---
+proxy-groups:
+  # 1. 主控组：日常使用
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - ♻️ 自动选择
+      - 🌐 GLOBAL
+      - 直连
+    use:
+      - 我的机场
+
+  # 2. 自动选速组
+  - name: ♻️ 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+    use:
+      - 我的机场
+
+  # 3. 手动选择组
+  - name: 🌐 GLOBAL
+    type: select
+    proxies:
+      - DIRECT
+    use:
+      - 我的机场
+
+  # 4. 广告拦截组
+  - name: 🚫 广告拦截
+    type: select
+    proxies:
+      - REJECT
+      - 直连
+
+  # 5. 漏网之鱼组 (新增)：专门处理规则以外的流量
+  - name: 🐟 漏网之鱼
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🌐 GLOBAL
+      - 直连
+
+# --- 节点定义 ---
+proxies:
+  - {name: 直连, type: direct}
+
+# --- 规则匹配逻辑 ---
+rules:
+  # 广告拦截
+  - RULE-SET,AWAvenue,🚫 广告拦截
+  
+  # 基础直连
+  - RULE-SET,private_ip,直连,no-resolve
+  - RULE-SET,private_domain,直连
+  - DOMAIN-KEYWORD,bing,直连
+  
+  # 影视资源站直连 (加速采集站)
+  - DOMAIN-KEYWORD,hhzyapi,直连
+  - DOMAIN-KEYWORD,kuaichezy,直连
+  - DOMAIN-KEYWORD,lziapi,直连
+  - DOMAIN-KEYWORD,ffzyapi,直连
+  - DOMAIN-KEYWORD,zuidapi,直连
+  
+  # 核心分流
+  - RULE-SET,ai,🚀 节点选择
+  - RULE-SET,github_domain,🚀 节点选择
+  - RULE-SET,youtube_domain,🚀 节点选择
+  - RULE-SET,google_domain,🚀 节点选择
+  - RULE-SET,telegram_domain,🚀 节点选择
+  - RULE-SET,netflix_domain,🚀 节点选择
+  - RULE-SET,microsoft_domain,🚀 节点选择
+  - RULE-SET,apple_domain,直连
+  
+  # IP 分流
+  - RULE-SET,google_ip,🚀 节点选择
+  - RULE-SET,telegram_ip,🚀 节点选择
+  - RULE-SET,netflix_ip,🚀 节点选择
+  
+  # 国内流量兜底直连
+  - RULE-SET,cn_domain,直连
+  - RULE-SET,cn_ip,直连,no-resolve
+  - GEOIP,CN,直连,no-resolve
+  
+  # --- 漏网之鱼 (兜底) ---
+  - MATCH,🐟 漏网之鱼
+
+# --- 规则集定义 ---
+rule-anchor:
+  ip: &ip {type: http, interval: 86400, behavior: ipcidr, format: mrs}
+  domain: &domain {type: http, interval: 86400, behavior: domain, format: mrs}
+
+rule-providers: 
+  AWAvenue: { <<: *domain, url: "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash.mrs" }
+  fakeipfilter_domain: {<<: *domain, url: "https://raw.githubusercontent.com/wwqgtxx/clash-rules/release/fakeip-filter.mrs"}
+  private_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs"}
+  ai: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-!cn.mrs" }
+  youtube_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs"}
+  google_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs"}
+  github_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs"}
+  telegram_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs"}
+  netflix_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs"}
+  microsoft_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs"}
+  apple_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple.mrs"}
+  cn_domain: { <<: *domain, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs"}
+  
+  private_ip: {<<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.mrs"}
+  cn_ip: { <<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs"}
+  google_ip: { <<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs"}
+  telegram_ip: { <<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs"}
+  netflix_ip: { <<: *ip, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs"}
